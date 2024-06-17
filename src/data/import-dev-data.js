@@ -6,7 +6,8 @@ const Tour = require("./../models/tourModel");
 
 
 dotenv.config({
-    path: `./../.env`});
+    path: `./../.env`
+});
 
 
 
@@ -22,7 +23,7 @@ mongoose.connect(DB, {})
 
 }).catch(function(err){
 
-    console.log(err);
+    console.log("Could not connect to the database. Exiting now...", err);
 });
 
 console.log(__dirname);

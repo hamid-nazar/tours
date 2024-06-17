@@ -4,7 +4,7 @@ const middlewares = require("../middleware/middlewares");
 
 const router = express.Router();
 
-
+// router.param("id",middlewares.checkId);
 
 router.route("/top-5-cheap")
 .get(middlewares.aliasTopTours, tourController.getAllTours);

@@ -1,5 +1,6 @@
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
+const catchAsync = require('../utils/catchAsync');
 
 
 async function createTour(req, res){
@@ -235,6 +236,13 @@ async function getMonthlyPlan(req, res){
 
 }
 
+// const getAllTours = catchAsync(getAllTours);
+// const createTour = catchAsync(createTour);
+// const getTour = catchAsync(getTour);
+// const updateTour = catchAsync(updateTour);
+// const deleteTour = catchAsync(deleteTour);
+// const getTourStats = catchAsync(getTourStats);
+// const getMonthlyPlan = catchAsync(getMonthlyPlan);
 
 module.exports = {
     getAllTours,
