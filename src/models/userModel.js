@@ -17,15 +17,17 @@ const userSchema = new mongoose.Schema({
         validate: [validator.isEmail, 'Please provide a valid email']
     },
     photo: String,
-    // role: {
-    //     type: String,
-    //     enum: ['user', 'guide', 'lead-guide', 'admin'],
-    //     default: 'user'
-    // },
+    role: {
+        type: String,
+        enum: ['user', 'guide', 'lead-guide', 'admin'],
+        default: 'user',
+        message: 'Role should be either: user, guide, lead-guide or admin'
+    },
     password: {
         type: String,   
         required: [true, 'Please provide a password'],
-        minlength: 8 
+        minlength: 8 ,
+        select: false
     },
     passwordConfirm: {
         type: String,
@@ -37,6 +39,14 @@ const userSchema = new mongoose.Schema({
             },
             message: 'Passwords do not match!'
         }
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    active: {
+        type: Boolean,
+        default: true,
+        select: false
     }
 });
 
@@ -51,6 +61,23 @@ userSchema.pre('save', async function(next) {
 
     this.passwordConfirm = undefined;
 
+    next();
+});
+
+
+userSchema.pre('save', function(next) {
+    
+    if(!this.isModified('password') || this.isNew) {
+        return next();
+    }   
+
+    this.passwordChangedAt = Date.now() - 1000;
+    next();
+});
+
+
+userSchema.pre(/^find/, function(next) {
+    this.find({active: {$ne: false}});
     next();
 });
 

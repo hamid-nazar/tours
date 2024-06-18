@@ -6,13 +6,14 @@ const Tour = require("./../models/tourModel");
 
 
 dotenv.config({
-    path: `./../.env`
+    path: `${__dirname}/../../.env`
 });
 
 
+console.log(process.env.MONGODB_CLOUD_URL);
 
 
-const DB = process.env.DATABASE_LOCAL;
+const DB = process.env.MONGODB_CLOUD_URL;
 
 console.log(DB);
 

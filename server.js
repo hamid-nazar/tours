@@ -17,7 +17,7 @@ dotenv.config({
 const app = require('./src/app');
 
 
-mongoose.connect(process.env.DATABASE_LOCAL, {})
+mongoose.connect(process.env.MONGODB_CLOUD_URL, {})
 .then(function () {
 
     console.log("Successfully connected to the database");})

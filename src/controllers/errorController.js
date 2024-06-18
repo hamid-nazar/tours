@@ -52,8 +52,21 @@ function databaseErrorHandler(err) {
 
         const message = `Invalid ${err.path}: ${err.value}`;
         return new AppError(message, 400);
-    }
 
+    } 
+
+}
+
+function authenticationErrorHandler(err) {
+
+    if (err.name === "JsonWebTokenError") {
+
+        return new AppError("Invalid token. Please try again", 401);
+
+    } else if (err.name === "TokenExpiredError") {
+
+        return new AppError("Your token has expired. Please login again", 401);
+    }
 }
 
 
@@ -68,11 +81,16 @@ function globalErrorHandler(err, req, res, next) {
 
     } else if (process.env.NODE_ENV === "production") {
 
-        const  error = {...err};
+        let  error = {...err};
 
         if (error.name === "CastError" || error.name === "ValidationError" || error.code === 11000) {
 
             error = databaseErrorHandler(error);
+        }
+
+        if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+        
+            error = authenticationErrorHandler(error);
         }
 
         prodErrorHandler(error, res);
