@@ -104,6 +104,18 @@ async function deleteMeHandler(req, res, next) {
     });
 }
 
+async function getMeHandler(req, res, next) {
+
+    const user = await User.findById(req.user._id);
+
+    res.status(200).json({  
+        status:"success",
+        data:{
+            user
+        }
+    })
+}
+
 const createUser = catchAsync(createUserHandler);
 const getAllUsers = catchAsync(getAllUsersHandler);
 const getUser = catchAsync(getUserHandler);
@@ -111,6 +123,7 @@ const updateUser = catchAsync(updateUserHandler);
 const deleteUser = catchAsync(deleteUserHandler);
 const updateMe = catchAsync(updateMeHandler);
 const deleteMe = catchAsync(deleteMeHandler);
+const getMe = catchAsync(getMeHandler);
 
 module.exports = {
     getAllUsers,
@@ -119,5 +132,6 @@ module.exports = {
     updateUser,
     deleteUser,
     updateMe,
-    deleteMe
+    deleteMe,
+    getMe
 }

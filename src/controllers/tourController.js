@@ -1,6 +1,9 @@
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
+
+
 
 
 async function createTour(req, res){
@@ -68,8 +71,7 @@ async function getAllTours(req, res){
 async function getTour(req, res){
 
     try {
-        
-        const tour = await Tour.findById(req.params.id);
+        const tour = await Tour.findById(req.params.id).populate("reviews");
 
         res.status(200).json({
             status:"success",
@@ -236,6 +238,68 @@ async function getMonthlyPlan(req, res){
 
 }
 
+async function getToursWithinHandler(req, res, next){
+
+    const {distance, latlng, unit} = req.params;
+    const [lat, lng] = latlng.split(',');
+    const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+
+    if(!lat || !lng){
+        next(new AppError("Please provide latitude and longitude in the format lat,lng", 400));
+    }
+
+    const tours = await Tour.find({startLocation: {$geoWithin: {$centerSphere: [[lng, lat], radius]}}});
+
+    res.status(200).json({
+        status:"success",
+        results:tours.length,
+        data:{
+            data:tours
+        }
+    });
+
+}
+
+async function getDistancesHandler(req, res, next){ 
+
+    const {latlng, unit} = req.params;
+
+    const [lat, lng] = latlng.split(',');
+
+    const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+
+    if(!lat || !lng){
+        next(new AppError("Please provide latitude and longitude in the format lat,lng", 400));
+    }
+
+    const distances = await Tour.aggregate([
+        {
+            $geoNear: {
+                near: {
+                    type: 'Point',
+                    coordinates: [lng * 1, lat * 1]
+                },
+                distanceField: 'distance',
+                distanceMultiplier: multiplier
+            }
+        },
+        {
+            $project: {
+                distance: 1,
+                name: 1
+            }
+        }
+    ]);
+
+    res.status(200).json({
+        status:"success",
+        data:{
+            data:distances
+        }
+    });
+}
+
+
 // const getAllTours = catchAsync(getAllTours);
 // const createTour = catchAsync(createTour);
 // const getTour = catchAsync(getTour);
@@ -244,6 +308,9 @@ async function getMonthlyPlan(req, res){
 // const getTourStats = catchAsync(getTourStats);
 // const getMonthlyPlan = catchAsync(getMonthlyPlan);
 
+const getToursWithin = catchAsync(getToursWithinHandler);
+const getDistances = catchAsync(getDistancesHandler);
+
 module.exports = {
     getAllTours,
     createTour,
@@ -251,5 +318,7 @@ module.exports = {
     updateTour,
     deleteTour,
     getTourStats,
-    getMonthlyPlan
+    getMonthlyPlan,
+    getToursWithin,
+    getDistances
 };

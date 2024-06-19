@@ -8,6 +8,7 @@ const hpp = require("hpp");
 
 const tourRouter = require("./routes/tourRoutes");
 const userRouter = require("./routes/userRoutes");
+const reviewRouter = require("./routes/reviewRoutes");
 const appError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
 
@@ -37,12 +38,13 @@ app.use(mongoSanitize());
 
 app.use(xss());
 
-app.use(hpp({
-    whitelist: ["duration", "ratingsAverage", "ratingsQuantity", "maxGroupSize", "difficulty", "price"]
-  }));
+// app.use(hpp({
+//     whitelist: ["duration", "ratingsAverage", "ratingsQuantity", "maxGroupSize", "difficulty", "price"]
+//   }));
 
 app.use("/api/tours",tourRouter);
 app.use("/api/users",userRouter);
+app.use("/api/reviews",reviewRouter);
 
 
 app.all("*",(req,res,next)=>{
