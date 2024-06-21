@@ -1,14 +1,21 @@
 const AppError = require("./../utils/appError");
 
 
-function devErrorHandler(err, res) {
-
-    res.status(err.statusCode).json({
-        status: err.status,
-        message: err.message,
-        error: err,
-        stack: err.stack
-    })
+function devErrorHandler(err,req, res) {
+    
+    if(req.originalUrl.startsWith("/api")) {
+        return res.status(err.statusCode).json({
+            status: err.status,
+            error: err,
+            message: err.message,
+            stack: err.stack
+        })
+    } else {
+        return res.status(err.statusCode).render("error", {
+            title: "Something went wrong!",
+            msg: err.message
+        })
+    }
 }
 
 function prodErrorHandler(err, res) {
@@ -77,7 +84,7 @@ function globalErrorHandler(err, req, res, next) {
 
     if (process.env.NODE_ENV === "development") {
 
-        devErrorHandler(err, res);
+        devErrorHandler(err,req, res);
 
     } else if (process.env.NODE_ENV === "production") {
 

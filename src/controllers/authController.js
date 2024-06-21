@@ -8,7 +8,7 @@ const sendEmail = require("../utils/email");
 
 
 
-function createJwtTokenAndSend(user, statusCode, res) {
+function createJwtTokenAndSend(user, statusCode, res,next) {
 
     const token = jwt.sign({user_id:user._id}, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN
@@ -76,6 +76,17 @@ async function loginHandler(req, res, next) {
 }
 
 
+async function logoutHandler(req, res) {
+
+    res.cookie("jwt", "loggedout", {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true
+    });
+
+    res.status(200).json({status:"success"});
+}
+
+
 
 async function protectHandler(req, res, next) {
   
@@ -83,6 +94,9 @@ async function protectHandler(req, res, next) {
 
     if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
+  
+    } else if(req.cookies.jwt) {
+        token = req.cookies.jwt;
     }
 
     if(!token) {
@@ -106,14 +120,48 @@ async function protectHandler(req, res, next) {
     }
 
     req.user = currentUser;
+    res.locals.user = currentUser;
     
     next();
+}
+
+async function isLoggedInHandler(req, res, next) {
+
+    try {
+        if(req.cookies.jwt) {
+            const decodedPayload = jwt.verify(req.cookies.jwt, process.env.JWT_SECRET);
+       
+            const currentUser = await User.findById(decodedPayload.user_id);
+            
+            if(!currentUser) {
+                return next();
+            }   
+
+            if(currentUser.passwordChangedAt) {
+                const changedTimestamp = parseInt(currentUser.passwordChangedAt.getTime()/1000, 10);
+               
+                if(changedTimestamp > decodedPayload.iat) {
+                   
+                    return next();
+                }
+            }
+       
+            res.locals.user = currentUser;
+
+            return next();
+        }
+       return next();
+        
+    } catch(err) {
+
+      return next();
+    }
 }
 
 function restrictTo(...roles) {
 
     return function (req, res, next){
-        console.log(req.user.role);
+
         if(!roles.includes(req.user.role)) {
             return next(new AppError("You do not have permission to perform this action", 403));
         }
@@ -137,7 +185,7 @@ async function forgotPasswordHandler(req, res, next) {
 
     user.passwordResetToken = hashedResetToken;
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
-    console.log(resetToken)
+   
     await user.save({validateBeforeSave: false});
 
     const resetURL = `${req.protocol}://${req.get("host")}/users/reset-password/${resetToken}`;
@@ -190,13 +238,17 @@ async function resetPasswordHandler(req, res, next) {
 }
 
 async function updatePasswordHandler(req, res, next) {
-
+    
     const user = await User.findById(req.user._id).select("+password");
-
+   
     const {currentPassword, newPassword, newPasswordConfirm} = req.body;
 
-    const isPasswordCorrect = await bycrypt.compare(currentPassword, user.password);
+    if(!currentPassword || !newPassword || !newPasswordConfirm) {
+        return next(new AppError("Please provide current password, new password and confirm new password", 400));
+    }
 
+    const isPasswordCorrect = await bycrypt.compare(currentPassword, user.password);
+    
     if(!isPasswordCorrect) {
         return next(new AppError("Your current password is wrong", 401));   
     }
@@ -212,20 +264,24 @@ async function updatePasswordHandler(req, res, next) {
 
 const signup = catchAsync(signupHandler);
 const login = catchAsync(loginHandler);
+const logout = catchAsync(logoutHandler);
 const protect = catchAsync(protectHandler);
 const forgotPassword = catchAsync(forgotPasswordHandler);
 const resetPassword = catchAsync(resetPasswordHandler);
 const updatePassword = catchAsync(updatePasswordHandler);
+const isLoggedIn = catchAsync(isLoggedInHandler);
 
 
 
 module.exports = {
     signup,
     login,
+    logout,
     protect,
     restrictTo,
     forgotPassword,
     resetPassword,
-    updatePassword
+    updatePassword,
+    isLoggedIn
 }
 

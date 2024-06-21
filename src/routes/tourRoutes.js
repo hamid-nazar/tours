@@ -11,7 +11,6 @@ const router = express.Router();
 router.use("/:tourId/reviews", reviewRouter);
 
 
-
 router.route("/")
 .post(authController.protect,authController.restrictTo("admin", "lead-guide"), tourController.createTour)
 .get(tourController.getAllTours);

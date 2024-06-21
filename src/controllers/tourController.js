@@ -62,8 +62,6 @@ async function getAllTours(req, res){
         
     }
 
-
-
 }
 
 
