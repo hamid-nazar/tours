@@ -10,7 +10,7 @@ async function getOverviewHandler(req, res, next) {
     res.status(200).render("overview", {
         title:"All Tours",
         tours:tours
-    });f
+    });
 }
 
 async function getTourHandler(req, res, next) {

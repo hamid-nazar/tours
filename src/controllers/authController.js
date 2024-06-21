@@ -4,7 +4,7 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const bycrypt = require("bcryptjs");
 const crypto = require("crypto");
-const sendEmail = require("../utils/email");
+const Email = require("../utils/email");
 
 
 
@@ -46,6 +46,10 @@ async function signupHandler(req, res) {
         passwordChangedAt: req.body.passwordChangedAt,
         role: req.body.role
     });
+
+    const url = `${req.protocol}://${req.get("host")}/me`;
+
+    await new Email(newUser, url).sendWelcome();
 
     createJwtTokenAndSend(newUser, 201, res);
 }
@@ -188,17 +192,12 @@ async function forgotPasswordHandler(req, res, next) {
    
     await user.save({validateBeforeSave: false});
 
-    const resetURL = `${req.protocol}://${req.get("host")}/users/reset-password/${resetToken}`;
-
-    const message = `Forgot your password? Submit a PATCH request with your new password to: ${resetURL}.\nIf you did not forget your password, please ignore this email.`;
-
+    
     try {
 
-        await sendEmail({
-            email:user.email,
-            subject:"Your password reset token (valid for 10 minutes)",
-            message
-        });
+        const resetURL = `${req.protocol}:/${req.get("host")}/api/users/reset-password/${resetToken}`;
+        
+        await new Email(user, resetURL).sendPasswordReset();
 
         res.status(200).json({
             status:"success",

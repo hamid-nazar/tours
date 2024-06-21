@@ -95,17 +95,24 @@ async function updateSettings (data, type){
 
     const url = type === 'password'? 'http://localhost:8000/api/users/update-password':'http://localhost:8000/api/users/update-me';
 
-    const res = await fetch(url, {
+    const res = type === 'password'? await fetch(url,{
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
+    }): await fetch(url, {
+      method: 'PATCH',
+      body: data
     });
+
       const reponse = await res.json();
+
       console.log(res);
+
     if (res.status === 200) {
       showAlert('success', `${type.toUpperCase()} updated successfully!`);
+
     }else{
       showAlert('error', `${reponse.message}`);
     }
@@ -120,10 +127,16 @@ if (userDataForm){
   userDataForm.addEventListener('submit', async function (e){
     e.preventDefault();
 
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
+    const formdata = new FormData();
+    formdata.append('name', document.getElementById('name').value);
+    formdata.append('email', document.getElementById('email').value);
 
-    updateSettings({ name, email }, 'data');
+    if (document.getElementById('photo').files[0]) {
+      formdata.append('photo', document.getElementById('photo').files[0]);
+    }
+   
+
+    updateSettings(formdata, 'data');
   });
 }
 
@@ -140,7 +153,7 @@ if (userDataForm){
       const newPassword = document.getElementById('password').value;
       const newPasswordConfirm = document.getElementById('password-confirm').value;
 
-      
+      console.log(currentPassword, newPassword, newPasswordConfirm);
       await updateSettings({ currentPassword, newPassword, newPasswordConfirm }, 'password');
   
       document.querySelector('.btn--save-password').textContent = 'Save password';

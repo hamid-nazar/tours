@@ -1,8 +1,58 @@
+const multer = require('multer');
+const sharp = require('sharp');
+
 const catchAsync = require("../utils/catchAsync");
 const User = require("../models/userModel");
 const AppError = require("../utils/appError");
 const utilFunctions = require("../utils/utilFunctions");
 
+
+
+// const storage = multer.diskStorage({destination:
+//     function (req, file, cb) {
+//         cb(null, 'src/public/img/users');
+//     },
+//     filename: function (req, file, cb) {
+
+//         const extention = file.mimetype.split("/")[1];
+//         cb(null, `user-${req.user.id}-${Date.now()}.${extention}`);
+//     }
+// });
+
+
+const storage = multer.memoryStorage();
+
+function fileFilter(req, file, cb){
+
+    if(file.mimetype.startsWith("image")) {
+        cb(null, true);
+
+    } else {
+        cb(new AppError("Not an image! Please upload only images", 400), false);
+    }
+}
+
+
+const upload = multer({storage: storage, fileFilter: fileFilter});
+
+const uploadUserPhoto = upload.single('photo');
+
+async function resizeUserPhotoHandler(req, res, next) {
+
+    if(!req.file) {
+        return next();
+    }
+    req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+
+    await sharp(req.file.buffer)
+            .resize(500, 500)
+            .toFormat('jpeg')
+            .jpeg({quality:90})
+            .toFile(`src/public/img/users/${req.file.filename}`);
+
+    console.log("file: ",req.file.filename);
+    return next();
+}
 
 async function createUserHandler(req, res) {
     console.log(req.body);
@@ -71,12 +121,17 @@ async function deleteUserHandler(req, res) {
 
 
 async function updateMeHandler(req, res, next) {
-
+    console.log(req.file);
     if(req.body.password || req.body.passwordConfirm) {
         return next(new AppError("This route is not for password updates. Please use /updateMyPassword", 400));
     }
 
     const filteredBody = utilFunctions.filterObject(req.body, "name", "email");
+
+    if(req.file){
+
+        filteredBody.photo = req.file.filename;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, filteredBody, {
         new: true,
@@ -124,6 +179,7 @@ const deleteUser = catchAsync(deleteUserHandler);
 const updateMe = catchAsync(updateMeHandler);
 const deleteMe = catchAsync(deleteMeHandler);
 const getMe = catchAsync(getMeHandler);
+const resizeUserPhoto = catchAsync(resizeUserPhotoHandler);
 
 module.exports = {
     getAllUsers,
@@ -133,5 +189,7 @@ module.exports = {
     deleteUser,
     updateMe,
     deleteMe,
-    getMe
+    getMe,
+    uploadUserPhoto,
+    resizeUserPhoto
 }

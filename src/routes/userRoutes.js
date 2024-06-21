@@ -3,6 +3,8 @@ const userController = require("./../controllers/userController");
 const middlewares = require("../middleware/middlewares");
 const authController = require("./../controllers/authController");
 
+
+
 const router = express.Router();
 
 
@@ -17,7 +19,9 @@ router.use(authController.protect); // Protect all routes after this middleware
 
 
 router.patch("/update-password", authController.updatePassword);
-router.patch("/update-me", userController.updateMe);
+
+router.patch("/update-me",userController.uploadUserPhoto,userController.resizeUserPhoto, userController.updateMe);
+
 router.delete("/delete-me", userController.deleteMe);
 router.get("/me", userController.getMe);
 
