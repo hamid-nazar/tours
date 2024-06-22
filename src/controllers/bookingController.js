@@ -47,10 +47,9 @@ async function webhookCheckoutHandler(req, res, next) {
 
     let event;
 
-    const endpointSecret = "whsec_fb343a4d09a9be70eca81c2f0c89793abf57efb5ed32460c88fa2f0a9f2e8abc";
     try {
 
-        event = await stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
+        event = await stripe.webhooks.constructEvent(req.body, signature, process.env.STRIPE_WEBHOOK_SECRET);
      
     } catch (err) {
 
