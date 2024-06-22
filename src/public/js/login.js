@@ -1,6 +1,3 @@
-/* eslint-disable */
-// import axios from 'axios';
-// import { showAlert } from './alerts';
 
 const mapBox = document.getElementById('map');
 const loginForm = document.querySelector('.form--login');

@@ -1,4 +1,5 @@
 const Tour = require("../models/tourModel");
+const Booking = require("../models/bookingModel");
 const catchAsync = require("../utils/catchAsync");
 const appError = require("../utils/appError");
 
@@ -40,6 +41,20 @@ function getAccount(req, res, next) {
     });
 }
 
+async function getMyToursHandler(req, res, next) {
+
+    const bookings = await Booking.find({user:req.user._id});
+
+    const tourIds = bookings.map(el=>el.tour);
+
+    const tours = await Tour.find({_id:{$in:tourIds}});
+    
+    res.status(200).render("overview", {
+        title:"My tours",
+        tours:tours
+    });
+}
+
 async function updateUserDataHandler(req, res, next) {
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, req.body, {
@@ -54,8 +69,10 @@ async function updateUserDataHandler(req, res, next) {
 
 
 
+
 const getOverview = catchAsync(getOverviewHandler);
 const getTour = catchAsync(getTourHandler);
+const getMyTours = catchAsync(getMyToursHandler);
 const updateUserData = catchAsync(updateUserDataHandler);
 
 
@@ -66,5 +83,6 @@ module.exports = {
     getTour,
     getLoginForm,
     getAccount,
+    getMyTours,
     updateUserData
 }

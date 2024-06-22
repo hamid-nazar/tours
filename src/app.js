@@ -12,7 +12,9 @@ const cors = require('cors');
 const tourRouter = require("./routes/tourRoutes");
 const userRouter = require("./routes/userRoutes");
 const reviewRouter = require("./routes/reviewRoutes");
-const viewRouter = require("./routes/viewRoutes")
+const viewRouter = require("./routes/viewRoutes");
+const booking = require("./routes/bookingRoutes");
+
 
 const appError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
@@ -68,6 +70,7 @@ app.use("/",viewRouter);
 app.use("/api/tours",tourRouter);
 app.use("/api/users",userRouter);
 app.use("/api/reviews",reviewRouter);
+app.use("/api/bookings",booking);
 
 
 app.all("*",(req,res,next)=>{
