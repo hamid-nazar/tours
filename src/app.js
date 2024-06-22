@@ -7,6 +7,7 @@ const xss = require("xss-clean");
 const hpp = require("hpp");
 const path = require("path");
 const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
 const cors = require('cors');
 
 const tourRouter = require("./routes/tourRoutes");
@@ -14,10 +15,11 @@ const userRouter = require("./routes/userRoutes");
 const reviewRouter = require("./routes/reviewRoutes");
 const viewRouter = require("./routes/viewRoutes");
 const booking = require("./routes/bookingRoutes");
-
-
 const appError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
+const bookingController = require("./controllers/bookingController");
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
@@ -45,6 +47,20 @@ const limiter = rateLimit({
   
   app.use("/api", limiter);
 
+ 
+// app.post('/webhook-checkout', bodyParser.raw({ type: 'application/json' }), async function (req, res) {
+
+//     const signature = req.headers['stripe-signature'];
+//     let event;
+//    event = await stripe.webhooks.constructEvent(req.body, signature, process.env.STRIPE_WEBHOOK_SECRET);
+
+//    console.log(event.type);
+
+//     res.status(200).json({ received: true });
+// });
+
+app.post("/webhook-checkout", bodyParser.raw({ type: "application/json" }), bookingController.webhookCheckout);  
+
 
 app.use(express.json({ limit: '10kb' }));
 
@@ -52,12 +68,12 @@ app.use(cookieParser());
 
 app.use(mongoSanitize());
 
-// app.use(xss());
+app.use(xss());
 
-// app.use(hpp({
-//     whitelist: ["duration", "ratingsAverage", "ratingsQuantity", "maxGroupSize", "difficulty", "price"]
-//   }));
-
+app.use(hpp({
+    whitelist: ["duration", "ratingsAverage", "ratingsQuantity", "maxGroupSize", "difficulty", "price"]
+  }));
+ 
 app.use((req, res, next) => {
     console.log("Hello from the middleware in app.js\n");
     // console.log(req.cookies);

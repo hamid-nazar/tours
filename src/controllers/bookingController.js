@@ -13,8 +13,8 @@ async function getCheckoutSessionHandler(req, res, next) {
 
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        mode: 'payment', // Add the mode parameter here
-        success_url: `${req.protocol}://${req.get('host')}/?tour=${req.params.tourId}&user=${req.user.id}&price=${tour.price}`,
+        mode: 'payment', 
+        success_url: `${req.protocol}://${req.get('host')}/my-tours`,
         cancel_url: `${req.protocol}://${req.get('host')}/tour/${tour.slug}`,
         customer_email: req.user.email,
         client_reference_id: req.params.tourId,
@@ -41,21 +41,46 @@ async function getCheckoutSessionHandler(req, res, next) {
     });
 }   
 
-async function createBookingCheckoutHandler(req, res, next) {
+async function webhookCheckoutHandler(req, res, next) {   
 
-    const {tour, user, price} = req.query;
-    
-    if(!tour && !user && !price) {
-        return next();
+    const signature = req.headers['stripe-signature'];
+
+    let event;
+
+    const endpointSecret = "whsec_fb343a4d09a9be70eca81c2f0c89793abf57efb5ed32460c88fa2f0a9f2e8abc";
+    try {
+
+        event = await stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
+     
+    } catch (err) {
+
+        return res.status(400).send(`Webhook error: ${err.message}`);
     }
+    if (event.type === 'checkout.session.completed') {
 
-    const booking = await Booking.create({
-        tour,
-        user,
-        price
+        console.log(event.data.object);
+
+       await createBookingFromCheckoutSession(event.data.object);
+    }
+    res.status(200).json({
+        received: true
     });
+}
 
-    res.redirect(req.originalUrl.split('?')[0]);
+
+async function createBookingFromCheckoutSession(session) {
+
+    const tour = session.client_reference_id;
+
+    const user = (await User.findOne({email: session.customer_email})).id;
+
+    const price = session.amount_total / 100;
+
+    console.log(tour, user, price);
+
+    await Booking.create({tour, user, price});
+
+    
 }
 
 async function createBookingHandler(req, res, next) { 
@@ -123,7 +148,8 @@ async function updateBookingHandler(req, res, next) {
 
 
 const getCheckoutSession = catchAsync(getCheckoutSessionHandler);
-const createBookingCheckout = catchAsync(createBookingCheckoutHandler);
+const webhookCheckout = catchAsync(webhookCheckoutHandler);
+
 const createBooking = catchAsync(createBookingHandler);
 const getAllBookings = catchAsync(getAllBookingsHandler);
 const getBooking = catchAsync(getBookingHandler);
@@ -132,7 +158,7 @@ const updateBooking = catchAsync(updateBookingHandler);
 
 module.exports = {
     getCheckoutSession,
-    createBookingCheckout,
+    webhookCheckout,
     createBooking,
     getAllBookings,
     getBooking,
